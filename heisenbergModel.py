@@ -42,5 +42,57 @@ class HeisenbergModel:
         """Evaluate energy E = <psi|H|psi> for the given MPS."""
         assert psi.L == self.L
         
-        raise NotImplementedError("Energy calculation not implemented yet.")
+        raise NotImplementedError("Energy calculation not implemented in model. Sedd DMRGEngine for usage.")
 
+
+
+class HeisenbergModelNearestNeighbors(HeisenbergModel):
+    """Heisenberg model with nearest neighbor interactions only."""
+
+
+    def generate_H_mpos(self) -> list[np.ndarray]:
+        """Generate the MPO representation of the Heisenberg Hamiltonian."""
+        D = 5
+        lam = np.exp(-1 / self.xi)
+
+        W = np.zeros((D, D, 2, 2), dtype=np.complex128)
+
+        # Setting the entries of W according to the Heisenberg model
+        W[0, 0] = self.id
+        W[0, 1] = self.Sx
+        W[0, 2] = self.Sy
+        W[0, 3] = self.Sz
+        W[1, -1] = self.J * self.Sx
+        W[2, -1] = self.J * self.Sy
+        W[3, -1] = self.J * self.Sz
+        W[4, 4] = self.id
+
+        # Return a list of W for each bond
+        return [W for _ in range(self.L)]
+    
+
+class HeisenbergModelNoDecay(HeisenbergModel):
+    """Heisenberg model with no decay in interactions."""
+
+    def generate_H_mpos(self) -> list[np.ndarray]:
+        """Generate the MPO representation of the Heisenberg Hamiltonian."""
+        D = 5
+        lam = np.exp(-1 / self.xi)
+
+        W = np.zeros((D, D, 2, 2), dtype=np.complex128)
+
+        # Setting the entries of W according to the Heisenberg model
+        W[0, 0] = self.id
+        W[0, 1] = self.Sx
+        W[0, 2] = self.Sy
+        W[0, 3] = self.Sz
+        W[1, -1] = self.J * self.Sx
+        W[2, -1] = self.J * self.Sy
+        W[3, -1] = self.J * self.Sz
+        W[4, 4] = self.id
+
+        # now set the "A" part of W
+        W[1,1] = W[2,2] = W[3,3] = self.id
+
+        # Return a list of W for each bond
+        return [W for _ in range(self.L)]
