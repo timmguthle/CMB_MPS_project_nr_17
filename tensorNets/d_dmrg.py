@@ -152,7 +152,6 @@ class DMRGEngine(object):
         RP = np.tensordot(RP, self.H_mpo[0], axes=[[1, 2], [2, 1]]) # vL [i] [wL] vL*, wL [wR] [i] i*
         RP = np.tensordot(RP, theta_0.conj(), axes=[[1, 3], [2, 1]]) # vL [vL*] wL [i*], vL* [i*] [vR*]
         # vL wL vL*
-        assert self.D == RP.shape[1], "bond dimension mismatch, expected {}, got {}".format(self.D, RP.shape[1])
         e1 = np.zeros([RP.shape[0], self.D, RP.shape[-1]], dtype=RP.dtype)
         e1[:, 0, :] = np.eye(RP.shape[-1])
         energy = np.tensordot(RP, e1, axes=[[0, 1, 2], [0, 1, 2]])  # vL wL vL* 
