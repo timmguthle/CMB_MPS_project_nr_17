@@ -145,7 +145,7 @@ class DMRGEngine(object):
 
     def calculate_energy(self):
         """Calculate the energy of the current MPS."""
-        self.update_RP(1) # ensure RPs[0] is up to date (not given for initialization idk)
+        # self.update_RP(1) # ensure RPs[0] is up to date (not given for initialization idk)
         theta_0 = self.psi.get_theta1(0)  # vL i vR
         RP = self.RPs[0]
         RP = np.tensordot(theta_0, RP, axes=[2, 0]) # vL i [vR], [vL] wL vL*
@@ -156,4 +156,12 @@ class DMRGEngine(object):
         e1[:, 0, :] = np.eye(RP.shape[-1])
         energy = np.tensordot(RP, e1, axes=[[0, 1, 2], [0, 1, 2]])  # vL wL vL* 
         return np.real_if_close(energy)
-
+    
+    def calc_e_2(self):
+        """Calculate the energy of the current MPS, using the second method."""
+        # self.update_RP(1)
+        # self.update_LP(0)  # ensure LPs[1] is up to date (not given for initialization idk)
+        # self.update_LP(1)
+        # self.update_LP(self.psi.L - 2)
+        energy = np.tensordot(self.LPs[1], self.RPs[0], axes=[[0, 1, 2], [0, 1, 2]])  # [vL] [wL*] [vL*] [vR*] [wR*] [vR]
+        return np.real_if_close(energy)
