@@ -5,7 +5,12 @@ import scipy
 import tensorNets.a_mps as a_mps
 import tensorNets.d_dmrg as d_dmrg
 
+# multiprocessing
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
+
 from heisenbergModel import HeisenbergModel, HeisenbergModelNearestNeighbors, HeisenbergModelNoDecay
+import sys
 
 # function to run the DMRG algorithm
 
@@ -19,6 +24,7 @@ def run_dmrg_simulation(L, J, xi, max_sweeps=20, tol=1e-9, chi_max=100):
     # E_exact = tfi_exact.finite_gs_energy(L, J, g)
 
     E, E_prev = 0, 0
+    print("running DMRG simulation for L =", L, "J =", J, "xi =", xi)
 
     for i in range(max_sweeps):
         engine.sweep()
@@ -30,7 +36,7 @@ def run_dmrg_simulation(L, J, xi, max_sweeps=20, tol=1e-9, chi_max=100):
             print(f"The system is converged after {i+1} sweeps!")
             break
     
-    return model, mps, engine
+    return mps
 
 def calculate_two_operator_expectation(psi, X, Y, i):
     """
@@ -99,13 +105,27 @@ if __name__ == "__main__":
     xi_range = [0.1, 1., 2.0, 5.0, 10., 20.0]
     L_for_correlations_2 = 64
 
+    if len(sys.argv) == 2:
+        try:
+            L_for_correlations_2 = int(sys.argv[1])
+        except ValueError:
+            print("Invalid argument for L. Using default value 64.")
+            L_for_correlations_2 = 64
+    else:
+        L_for_correlations_2 = 64
+
     ground_states_64 = []
     sigmax = np.array([[0., 1.], [1., 0.]])
 
-    for xi in xi_range:
-        print(f"Running DMRG simulation for xi = {xi}")
-        model, mps, engine = run_dmrg_simulation(L_for_correlations_2, J, xi, tol=1e-10, chi_max=500)
-        ground_states_64.append(mps)
+    max_workers = min(len(xi_range), multiprocessing.cpu_count())
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        futures = [executor.submit(run_dmrg_simulation, L_for_correlations_2,J, xi, 20, 1e-10, 500) 
+                  for xi in xi_range]
+        
+        # Collect results
+        ground_states_64 = np.array([future.result() for future in futures])
 
     np.save("data/ground_states_64.npy", ground_states_64)
 
